@@ -19,16 +19,52 @@ struct Account
 
 };
 
+// there is only one account in thie simulation
+Account myAccount("1", "2", 0.00f);
 
-Account myAccount("189", "0001", 980.50f);
+
+/* This function takes string and will tell you whether or not 
+*  the string inputted is a valid expression of USD (#, #.#, or #.##)
+*  Note that this function WILL RETURN FALSE if
+* 		- there is a dollar sign ($) in you string
+*		- if there is more than two decimal places after the decimal
+*       - the string is composed of anything other than digits and a decimal
+*  Any string that returns true from this function can be
+*  cast into a float with no issues
+*/
+bool isMoneyFloat(String& string)
+{
+	bool hasDecimal = false;
+	int decimalIndex;
+	for (int i = 0; i < string.length(); i++)
+	{
+		if (isdigit(string[i]))
+			continue;
+		else if (string[i] == '.')
+		{
+			if (hasDecimal == false)
+			{
+				hasDecimal = true;
+				decimalIndex = i;
+				continue;
+			} else { return false; }
+
+		} else { return false; }
+	}
+	if (hasDecimal == false) 
+		return true;
+	if (decimalIndex >= (string.length() - 3))
+		return true;
+	else 
+		return false;
+}
+
 
 
 int main()
 {
-	/* 
-	*  This scope is executed prior to the simulation aspect of the ATM
-	*  actually "Booting". It asks the user to start or exit the program.
-	*/
+	// This scope is executed prior to the simulation aspect of the ATM
+	// actually "Booting". It asks the user to start or exit the program.
 	{
 		std::cout << "USER: " << myAccount.m_user << " | PASS: " << myAccount.m_password << "\n";
 
@@ -59,10 +95,11 @@ int main()
 		}
 	}
 	
-	// this true loop is the game loop of the simulation
+	// this loop is the game loop of the simulation
 	while (true)
 	{
-		// Login Section;
+		// this scope prompts the user for a username and password that
+		// match the username and password that correspond to the account
 		{
 			bool attemptingLogin = true;
 
@@ -87,51 +124,92 @@ int main()
 			}
 		}
 
-		/* This is the main menu that contains to bulk of the functionality
-		*  of the program/simulation.
-		*/
+		// This is the main menu that contains to bulk of the functionality
+		// of the program/simulation.
 		bool inMenu = true;
 
 		std::cout << "\nHello User #" + myAccount.m_user + "\n";
 
 		while (inMenu)
 		{
-			// present options
+			// present menu options
 			std::cout << "\nEnter the corresponding command for the following actions: \n" << 
 			"'w' : withdraw\n" << 
 			"'d' : deposit\n" << 
 			"'b' : balance\n" <<
 			"'l' : logout\n" <<
 			"\n>> ";
-			bool waitingForValidInput = true;
-			while (waitingForValidInput) 
-			{
-				char input;
-				std::cin >> input;
-				std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-				if (input == 'w')
+			// getting input
+			char input;
+			std::cin >> input;
+			std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
+
+			// handling withdrawals
+			if (input == 'w')
+			{
+				bool waitingForValidInput = true;
+				while (waitingForValidInput)
 				{
-					waitingForValidInput = false;
-					std::cout << "\n\n[withdraw] Enter amount: ";
+					std::cout << "\n[withdraw] Enter amount: $";
+					String withdrawInput;
+					std::cin >> withdrawInput;
+					if (isMoneyFloat(withdrawInput))
+					{
+						float amount = std::stof(withdrawInput);
+						if (amount > myAccount.m_balance)
+						{
+							std::cout << "\nNot enough funds in account!\n";
+							continue;
+						}
+						waitingForValidInput = false;
+						std::cout << "\nYou have withdrawn $" << amount << "\n";
+						myAccount.m_balance -= amount;
+					}
+					else
+						std::cout << "\nInvalid input!\n";
 				}
-				else if (input == 'd')
+			}
+
+			// handling deposits
+			else if (input == 'd')
+			{
+				bool waitingForValidInput = true;
+				while (waitingForValidInput)
 				{
-					waitingForValidInput = false;
-					std::cout << "\n\n[deposit] Enter amount: ";
+					std::cout << "\n[deposit] Enter amount: $";
+					String depositInput;
+					std::cin >> depositInput;
+					if (isMoneyFloat(depositInput))
+					{
+						float amount = std::stof(depositInput);
+						
+						waitingForValidInput = false;
+						std::cout << "\nYou have deposited $" << amount << "\n";
+						myAccount.m_balance += amount;
+					}
+					else
+						std::cout << "\nInvalid input!\n";
 				}
-				else if (input == 'b')
-				{
-					waitingForValidInput = false;
-				}
-				else if (input == 'l')
-				{
-					waitingForValidInput = false;
-				}
-				else
-				{
-					std::cout << "\n\nInvalid option!\n\n>> ";
-				}
+			}
+
+			// handling balance request
+			else if (input == 'b')
+			{
+				std::cout << "Your balance is $" << myAccount.m_balance << "\n";
+			}
+
+			// handling logout request
+			else if (input == 'l')
+			{
+				std::cout << "\nLogging out...\n\n";
+				inMenu = false;
+			}
+
+			// handling extreneous input
+			else
+			{
+				std::cout << "\n\nInvalid option!\n";
 			}
 		}
 	}
